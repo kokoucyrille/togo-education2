@@ -2,17 +2,14 @@
 pages/4_Analyses_Recommandations.py
 =====================================
 Cœur analytique du tableau de bord : théorie des graphes, Indice d'Adéquation
-Formation-Emploi (IAFE — FEAS, CRITIC, classement, priorisation, scénarios),
-Machine Learning exploratoire & clustering régional, puis recommandations
-stratégiques et Policy Dashboard. Fusionne les anciennes pages Analyse
-Territoriale (théorie des graphes), Enseignement Supérieur (ML/clustering),
-Indice Formation-Emploi et Recommandations.
+Formation-Emploi (IAFE — FEAS, CRITIC, classement, priorisation), palmarès des
+établissements (top/bottom 10) et scénarios prospectifs, puis recommandations
+stratégiques et Policy Dashboard.
 """
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from scipy.stats import spearmanr
 
 from utils.helpers import chart_insights, download_buttons, fmt_fr, png_download_button, setup_page, story_box
@@ -26,7 +23,7 @@ from utils.preprocessing import build_indicateurs_sup, build_budget_wide, clean_
 from utils.indicators import (
     compute_feas, compute_complementary_scores, compute_iafe, compute_iafe_etablissement,
     critic_weights, compute_impact_urgence, compute_scenarios, compute_region_features,
-    compute_ml_comparison, compute_clustering, compute_cover_df, compute_saturation_risk,
+    compute_cover_df, compute_saturation_risk,
 )
 from utils.charts import radar_chart, gauge_chart
 from utils.graph_utils import build_global_pyvis_html
@@ -35,9 +32,9 @@ from streamlit_folium import st_folium
 
 setup_page("Analyses & Recommandations", "🧮")
 df_filtered, filters = render_sidebar(show_filters=True, current="4_Analyses_Recommandations")
-render_navbar("Analyses & Recommandations", "Graphes · Indice IAFE · Machine Learning · Policy Dashboard", "🧮")
+render_navbar("Analyses & Recommandations", "Graphes · IAFE · Palmarès · Scénarios · Policy", "🧮")
 
-tabs = st.tabs(["Théorie des graphes", "Indice IAFE", "Machine Learning & Clustering", "Recommandations", "Policy Dashboard"])
+tabs = st.tabs(["Théorie des graphes", "Indice IAFE", "Palmarès & Scénarios", "Recommandations", "Policy Dashboard"])
 
 # ------------------------------------------------------------------
 # Théorie des graphes
@@ -119,19 +116,6 @@ with tabs[1]:
                        xaxis_range=[0, 115], height=380, margin=dict(t=60, b=10), yaxis=dict(autorange="reversed"))
     st.plotly_chart(fig, width='stretch')
 
-    etab_iafe = compute_iafe_etablissement(df_filtered)
-    cols_show = ["etab_nom", "region_nom_bdd", "etablissement_categorie", "IAFE_etablissement"]
-    rename_show = {"etab_nom": "Établissement", "region_nom_bdd": "Région", "etablissement_categorie": "Catégorie", "IAFE_etablissement": "IAFE"}
-    top10 = etab_iafe.dropna(subset=["IAFE_etablissement"]).sort_values("IAFE_etablissement", ascending=False).head(10)[cols_show].rename(columns=rename_show)
-    bottom10 = etab_iafe.dropna(subset=["IAFE_etablissement"]).sort_values("IAFE_etablissement", ascending=True).head(10)[cols_show].rename(columns=rename_show)
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("**TOP 10 établissements**")
-        st.dataframe(top10.style.background_gradient(subset=["IAFE"], cmap="RdYlGn"), width='stretch', hide_index=True)
-    with c2:
-        st.markdown("**BOTTOM 10 établissements**")
-        st.dataframe(bottom10.style.background_gradient(subset=["IAFE"], cmap="RdYlGn"), width='stretch', hide_index=True)
-
     with st.expander("🎯 Matrice de priorisation Impact × Urgence"):
         impact_urgence = compute_impact_urgence(df_filtered)
         med_impact, med_urgence = impact_urgence.attrs["med_impact"], impact_urgence.attrs["med_urgence"]
@@ -149,55 +133,34 @@ with tabs[1]:
         st.plotly_chart(fig, width='stretch')
         download_buttons(impact_urgence.drop(columns="Couleur"), "matrice_impact_urgence", "iu")
 
-    with st.expander("🔮 Scénarios prospectifs (simulation transparente de la formule IAFE)"):
-        sc = compute_scenarios()
-        st.dataframe(
-            sc["scenarios_df"].style.background_gradient(subset=["Δ IAFE national"], cmap="RdYlGn", vmin=-10, vmax=10)
-            .format({"IAFE national": "{:.1f}", "Δ IAFE national": "{:+.1f}"}, na_rep="n/a"),
-            width='stretch', hide_index=True,
-        )
-        st.caption(f"Référence : IAFE national de base = {sc['iafe_base_nat']:.1f}/100. Il faudrait +{sc['nb_centres_necessaires']} "
-                   f"centres pour que {sc['region_cible']} quitte la dernière place en couverture/habitant.")
-
 # ------------------------------------------------------------------
-# Machine Learning & Clustering
+# Palmarès des établissements & Scénarios prospectifs
 # ------------------------------------------------------------------
 with tabs[2]:
-    st.warning(
-        "⚠️ Le chômage des diplômés n'est connu qu'à l'échelle **nationale** et sur **6 années seulement**. "
-        "Ce qui suit est un **exercice pédagogique de bout en bout** ; les performances n'ont **aucune valeur "
-        "prédictive opérationnelle**."
+    etab_iafe = compute_iafe_etablissement(df_filtered)
+    cols_show = ["etab_nom", "region_nom_bdd", "etablissement_categorie", "IAFE_etablissement"]
+    rename_show = {"etab_nom": "Établissement", "region_nom_bdd": "Région", "etablissement_categorie": "Catégorie", "IAFE_etablissement": "IAFE"}
+    top10 = etab_iafe.dropna(subset=["IAFE_etablissement"]).sort_values("IAFE_etablissement", ascending=False).head(10)[cols_show].rename(columns=rename_show)
+    bottom10 = etab_iafe.dropna(subset=["IAFE_etablissement"]).sort_values("IAFE_etablissement", ascending=True).head(10)[cols_show].rename(columns=rename_show)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**🏆 TOP 10 établissements**")
+        st.dataframe(top10.style.background_gradient(subset=["IAFE"], cmap="RdYlGn"), width='stretch', hide_index=True)
+    with c2:
+        st.markdown("**🔻 BOTTOM 10 établissements**")
+        st.dataframe(bottom10.style.background_gradient(subset=["IAFE"], cmap="RdYlGn"), width='stretch', hide_index=True)
+
+    st.markdown("#### 🔮 Scénarios prospectifs")
+    st.caption("Simulation transparente de la formule IAFE : que se passerait-il si l'on agissait sur tel ou tel levier ?")
+    sc = compute_scenarios()
+    st.dataframe(
+        sc["scenarios_df"].style.background_gradient(subset=["Δ IAFE national"], cmap="RdYlGn", vmin=-10, vmax=10)
+        .format({"IAFE national": "{:.1f}", "Δ IAFE national": "{:+.1f}"}, na_rep="n/a"),
+        width='stretch', hide_index=True,
     )
-    ml = compute_ml_comparison()
-    st.markdown("#### Comparaison de modèles (validation croisée Leave-One-Out)")
-    st.dataframe(ml["results_df"], width='stretch', hide_index=True)
-    story_box("⚠️ Avec n=6, le R² peut être négatif ou instable : ce n'est PAS un signe d'échec, mais la "
-              "conséquence arithmétique attendue d'un échantillon aussi réduit.", "warning")
-
-    fig = px.bar(ml["importance"].reset_index(), x="index", y=0, color=0, color_continuous_scale="Teal",
-                 labels={"index": "Variable", "0": "Importance"}, title="Importance des variables — Random Forest (n=6, indicatif ⚠️)")
-    fig.update_layout(height=360, margin=dict(t=60, b=10), showlegend=False, coloraxis_showscale=False)
-    st.plotly_chart(fig, width='stretch')
-
-    st.markdown("#### Clustering régional")
-    st.warning("⚠️ Le Togo compte **5 régions** : ce n'est pas un échantillon statistique mais la population "
-               "complète. Le clustering est un outil de regroupement visuel, pas une découverte généralisable.")
-    cl = compute_clustering()
-    fig = make_subplots(rows=1, cols=3, subplot_titles=("KMeans", "DBSCAN", "Agglomerative"))
-    coords = cl["coords_pca"]
-    for i, method in enumerate(["KMeans", "DBSCAN", "Agglomerative"]):
-        labels = cl["clusters"][method].values
-        for lbl in sorted(set(labels)):
-            mask = labels == lbl
-            fig.add_trace(go.Scatter(x=coords[mask, 0], y=coords[mask, 1], mode="markers+text",
-                                      text=[r for r, m in zip(cl["clusters"].index, mask) if m],
-                                      textposition="top center", marker=dict(size=14),
-                                      name=f"{method}: Cluster {lbl}" if lbl != -1 else f"{method}: Bruit",
-                                      showlegend=False), row=1, col=i + 1)
-    fig.update_layout(height=400, margin=dict(t=60, b=10), title_text="Segmentation des 5 régions (projection PCA)")
-    st.plotly_chart(fig, width='stretch')
-    story_box("La Maritime se distingue nettement (volume et diversité les plus élevés, portés par Lomé), "
-              "tandis que les autres régions se regroupent selon leur couverture relative et la fraîcheur de leur offre.", "info")
+    story_box(f"Référence : IAFE national de base = {sc['iafe_base_nat']:.1f}/100. Il faudrait "
+              f"<b>+{sc['nb_centres_necessaires']} centres</b> pour que <b>{sc['region_cible']}</b> quitte la "
+              "dernière place en couverture/habitant.", "info")
 
 # ------------------------------------------------------------------
 # Recommandations stratégiques

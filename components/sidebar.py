@@ -25,12 +25,14 @@ def _b64(path) -> str:
 
 
 def render_sidebar_brand():
-    """Bandeau de logos institutionnels, parfaitement centre, + nom court du projet."""
-    logos = [ASSETS_DIR / filename for filename in LOGO_FILES]
-    available = [str(logo) for logo in logos if logo.exists()]
-    if available:
-        html_imgs = "".join(f'<img src="data:image/jpeg;base64,{_b64(p)}">' for p in available)
-        st.markdown(f'<div class="sidebar-logos">{html_imgs}</div>', unsafe_allow_html=True)
+    """Logo du Ministère de l'Éducation Nationale, seul, en grand format, bien
+    rond et centre, + nom court du projet."""
+    logo_path = ASSETS_DIR / LOGO_FILES[0]
+    if logo_path.exists():
+        st.markdown(
+            f'<div class="sidebar-logos"><img src="data:image/jpeg;base64,{_b64(logo_path)}"></div>',
+            unsafe_allow_html=True,
+        )
     else:
         st.markdown(f'<div class="sidebar-logos-fallback">{APP_ICON}</div>', unsafe_allow_html=True)
     st.markdown(
