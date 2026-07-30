@@ -48,9 +48,8 @@ with col_a:
         "au Togo, et en tirer des **recommandations stratégiques** pour le Ministère."
     )
 with col_b:
-    st.markdown("### 📍 Portée")
+    st.markdown("### 📍 Portée : 5 régions")
     st.info("Maritime · Plateaux · Centrale · Kara · Savanes")
-    st.caption(f"{AUTHOR} — {INSTITUTION}")
 
 # ------------------------------------------------------------------
 # KPI principaux

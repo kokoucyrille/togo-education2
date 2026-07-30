@@ -24,7 +24,7 @@ st.markdown(
     <div class="author-card">
         <div style="font-size:20px;font-weight:750;color:#0B3D66;">{AUTHOR}</div>
         <div style="color:#64748B;font-size:14.5px;margin:4px 0 14px 0;">
-            Ingénieur de Travaux Informatiques — {INSTITUTION}
+            Ingénieur de Travaux Informatiques 
         </div>
         <p style="font-size:14.5px;line-height:1.6;">
             Passionné par la Data Science, le développement d'applications décisionnelles, l'intelligence
@@ -56,19 +56,7 @@ st.divider()
 # ------------------------------------------------------------------
 # Méthodologie
 # ------------------------------------------------------------------
-st.markdown("### Ce que cette analyse établit (sur données réelles)")
-st.markdown(
-    """
-- Une **cartographie fine et géolocalisée** de 256 établissements de formation technique, avec une forte
-  concentration régionale et des disparités marquées de couverture par habitant.
-- Une **lecture structurelle par la théorie des graphes** (centralités, PageRank, communautés de Louvain).
-- Un **suivi complet des indicateurs nationaux** (effectifs, féminisation, encadrement, budgets, chômage).
-- Une **démarche Machine Learning et clustering reproductible**, honnêtement bornée par la taille des
-  échantillons disponibles.
-- Des **scores composites originaux** (FEAS, IAFE, Opportunity Index, Territorial Equity Score) combinant
-  systématiquement le réel et l'estimé, chaque composante étant traçable à sa source.
-"""
-)
+
 
 st.markdown("### Ce qu'il manque pour aller plus loin (priorités de collecte pour le Ministère)")
 st.markdown(
