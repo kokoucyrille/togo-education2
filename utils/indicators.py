@@ -78,8 +78,9 @@ def compute_kpi() -> Dict:
 # §4.1 — Couverture territoriale
 # ------------------------------------------------------------------
 @st.cache_data(show_spinner=False)
-def compute_cover_df() -> pd.DataFrame:
-    df_etab = clean_etablissements()
+def compute_cover_df(df_etab: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    if df_etab is None:
+        df_etab = clean_etablissements()
     pop_df = get_population_df()
     region_counts = df_etab["region_nom_bdd"].value_counts().reindex(REGIONS).fillna(0).astype(int)
     cover_df = region_counts.rename("nb_etablissements").reset_index().rename(columns={"region_nom_bdd": "region"})
